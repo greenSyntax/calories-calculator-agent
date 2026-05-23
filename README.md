@@ -171,7 +171,26 @@ npm start
 
 ---
 
-# API Endpoint
+# API Endpoints
+
+## Health Check
+
+```http
+GET /health
+```
+
+### Response
+
+```json
+{
+  "status": "ok",
+  "ollama": true
+}
+```
+
+`ollama` is `true` when the Ollama server at `OLLAMA_BASE_URL` is reachable, `false` otherwise.
+
+---
 
 ## Analyze Meal
 
