@@ -7,6 +7,9 @@ import { safeJsonParse } from '../utils/json.util.js';
 export const analyzeMeal = async (meal) => {
   const prompt = buildNutritionPrompt(meal);
 
+  if (env.devLog) console.log(`[DEV] Sending request to Ollama -> model: ${env.ollamaModel}, url: ${env.ollamaBaseUrl}`);
+
+  const start = Date.now();
   let response;
 
   try {
@@ -29,8 +32,11 @@ export const analyzeMeal = async (meal) => {
       }
     );
   } catch (err) {
+    const elapsed = Date.now() - start;
+    if (env.devLog) console.log(`[DEV] Ollama request failed after ${elapsed}ms -> code: ${err.code}, message: ${err.message}`);
+
     if (err.code === 'ECONNABORTED' || err.code === 'ETIMEDOUT') {
-      throw new Error('Ollama request timed out. The model may be overloaded or unavailable.');
+      throw new Error(`Ollama request timed out after ${elapsed}ms. The model may be overloaded or unavailable.`);
     }
 
     if (err.code === 'ECONNREFUSED' || err.code === 'ENOTFOUND') {
@@ -43,6 +49,9 @@ export const analyzeMeal = async (meal) => {
 
     throw new Error(`Ollama request failed: ${err.message}`);
   }
+
+  const elapsed = Date.now() - start;
+  if (env.devLog) console.log(`[DEV] Ollama responded in ${elapsed}ms -> eval_count: ${response.data.eval_count}, prompt_eval_count: ${response.data.prompt_eval_count}`);
 
   const parsed = safeJsonParse(response.data.response);
 
