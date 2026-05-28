@@ -171,6 +171,105 @@ npm start
 
 ---
 
+# Docker
+
+## First-Time Setup
+
+**1. Build the image:**
+
+```bash
+docker build -t broco-meal-analyzer .
+```
+
+**2. Create a `.env` file** (if not already):
+
+```env
+PORT=3000
+OLLAMA_BASE_URL=http://host-gateway:11434
+OLLAMA_MODEL=qwen2.5:3b-instruct-q4_K_M
+DEV_LOG=True
+```
+
+> `host-gateway` lets the container reach Ollama running on the host machine. Used in the `docker run` command below via `--add-host`.
+
+**3. Run the container:**
+
+```bash
+docker run -d \
+  --name broco-meal-analyzer \
+  --add-host=host-gateway:host-gateway \
+  --env-file .env \
+  -p 3000:3000 \
+  broco-meal-analyzer
+```
+
+**4. Verify it's running:**
+
+```bash
+docker ps
+curl http://localhost:3000/health
+```
+
+---
+
+## Update and Re-run
+
+After making code changes, rebuild and restart:
+
+**1. Stop and remove the old container:**
+
+```bash
+docker stop broco-meal-analyzer
+docker rm broco-meal-analyzer
+```
+
+**2. Rebuild the image:**
+
+```bash
+docker build -t broco-meal-analyzer .
+```
+
+**3. Run the new container:**
+
+```bash
+docker run -d \
+  --name broco-meal-analyzer \
+  --add-host=host-gateway:host-gateway \
+  --env-file .env \
+  -p 3000:3000 \
+  broco-meal-analyzer
+```
+
+---
+
+## Useful Docker Commands
+
+View live logs:
+
+```bash
+docker logs -f broco-meal-analyzer
+```
+
+Stop the container:
+
+```bash
+docker stop broco-meal-analyzer
+```
+
+Remove the container:
+
+```bash
+docker rm broco-meal-analyzer
+```
+
+Remove the image:
+
+```bash
+docker rmi broco-meal-analyzer
+```
+
+---
+
 # API Endpoints
 
 ## Health Check
@@ -398,6 +497,53 @@ Restart:
 
 ```bash
 sudo systemctl restart dphys-swapfile
+```
+
+---
+
+# Test Ollama with cURL
+
+Check if Ollama is reachable:
+
+```bash
+curl http://localhost:11434/api/tags
+```
+
+Expected response — a list of locally available models:
+
+```json
+{
+  "models": [
+    {
+      "name": "qwen2.5:3b-instruct-q4_K_M",
+      "model": "qwen2.5:3b-instruct-q4_K_M",
+      "size": 2019393189,
+      "digest": "..."
+    }
+  ]
+}
+```
+
+Run a quick generate to confirm the model responds:
+
+```bash
+curl http://localhost:11434/api/generate \
+--header 'Content-Type: application/json' \
+--data '{
+  "model": "qwen2.5:3b-instruct-q4_K_M",
+  "prompt": "Say hello.",
+  "stream": false
+}'
+```
+
+Expected response:
+
+```json
+{
+  "model": "qwen2.5:3b-instruct-q4_K_M",
+  "response": "Hello! How can I assist you today?",
+  "done": true
+}
 ```
 
 ---
