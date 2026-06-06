@@ -1,8 +1,15 @@
 import { z } from 'zod';
 
-export const mealRequestSchema = z.object({
-  meal: z.string().min(2)
-});
+export const mealRequestSchema = z.discriminatedUnion('meal_media_type', [
+  z.object({
+    meal_media_type: z.literal('text'),
+    meal_data: z.string().min(2)
+  }),
+  z.object({
+    meal_media_type: z.literal('image'),
+    meal_image_base64: z.string().min(1)
+  })
+]);
 
 export const nutritionResponseSchema = z.object({
   meal_data: z.string(),
