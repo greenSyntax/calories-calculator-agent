@@ -171,6 +171,180 @@ npm start
 
 ---
 
+# Docker
+
+## First-Time Setup
+
+**1. Build the image:**
+
+```bash
+docker build -t calories-calculator-agent .
+```
+
+**2. Create a `.env` file** (if not already):
+
+```env
+PORT=3000
+OLLAMA_BASE_URL=http://host-gateway:11434
+OLLAMA_MODEL=qwen2.5:3b-instruct-q4_K_M
+DEV_LOG=True
+```
+
+> `host-gateway` lets the container reach Ollama running on the host machine. Used in the `docker run` command below via `--add-host`.
+
+**3. Run the container:**
+
+```bash
+docker run -d \
+  --name calories-calculator-agent \
+  --add-host=host-gateway:host-gateway \
+  --env-file .env \
+  -p 3000:3000 \
+  calories-calculator-agent
+```
+
+**4. Verify it's running:**
+
+```bash
+docker ps
+curl http://localhost:3000/health
+```
+
+---
+
+## Update and Re-run
+
+After making code changes, rebuild and restart:
+
+**1. Stop and remove the old container:**
+
+```bash
+docker stop calories-calculator-agent
+docker rm calories-calculator-agent
+```
+
+**2. Rebuild the image:**
+
+```bash
+docker build -t calories-calculator-agent .
+```
+
+**3. Run the new container:**
+
+```bash
+docker run -d \
+  --name calories-calculator-agent \
+  --add-host=host-gateway:host-gateway \
+  --env-file .env \
+  -p 3000:3000 \
+  calories-calculator-agent
+```
+
+---
+
+## Run via Docker Hub
+
+### Push Image to Docker Hub
+
+**1. Login to Docker Hub:**
+
+```bash
+docker login
+```
+
+**2. Build the image with your Docker Hub tag:**
+
+```bash
+docker build -t abhix09/calories-calculator-agent:latest .
+```
+
+**3. Push the image:**
+
+```bash
+docker push abhix09/calories-calculator-agent:latest
+```
+
+---
+
+### Pull and Run from Docker Hub
+
+**1. Pull the image on your VM / Raspberry Pi:**
+
+```bash
+docker pull abhix09/calories-calculator-agent:latest
+```
+
+**2. Create a `.env` file:**
+
+```env
+PORT=3000
+OLLAMA_BASE_URL=http://host-gateway:11434
+OLLAMA_MODEL=qwen2.5:3b-instruct-q4_K_M
+DEV_LOG=True
+```
+
+**3. Run the container:**
+
+```bash
+docker run -d \
+  --name calories-calculator-agent \
+  --add-host=host-gateway:host-gateway \
+  --env-file .env \
+  -p 3000:3000 \
+  abhix09/calories-calculator-agent:latest
+```
+
+**4. Verify:**
+
+```bash
+curl http://localhost:3000/health
+```
+
+---
+
+### Push a New Version
+
+When you update the code, tag with a version before pushing:
+
+```bash
+docker build -t abhix09/calories-calculator-agent:v1.0.1 .
+docker push abhix09/calories-calculator-agent:v1.0.1
+
+# Also update latest
+docker tag abhix09/calories-calculator-agent:v1.0.1 abhix09/calories-calculator-agent:latest
+docker push abhix09/calories-calculator-agent:latest
+```
+
+---
+
+## Useful Docker Commands
+
+View live logs:
+
+```bash
+docker logs -f calories-calculator-agent
+```
+
+Stop the container:
+
+```bash
+docker stop calories-calculator-agent
+```
+
+Remove the container:
+
+```bash
+docker rm calories-calculator-agent
+```
+
+Remove the image:
+
+```bash
+docker rmi calories-calculator-agent
+```
+
+---
+
 # API Endpoints
 
 ## Health Check
@@ -398,6 +572,53 @@ Restart:
 
 ```bash
 sudo systemctl restart dphys-swapfile
+```
+
+---
+
+# Test Ollama with cURL
+
+Check if Ollama is reachable:
+
+```bash
+curl http://localhost:11434/api/tags
+```
+
+Expected response — a list of locally available models:
+
+```json
+{
+  "models": [
+    {
+      "name": "qwen2.5:3b-instruct-q4_K_M",
+      "model": "qwen2.5:3b-instruct-q4_K_M",
+      "size": 2019393189,
+      "digest": "..."
+    }
+  ]
+}
+```
+
+Run a quick generate to confirm the model responds:
+
+```bash
+curl http://localhost:11434/api/generate \
+--header 'Content-Type: application/json' \
+--data '{
+  "model": "qwen2.5:3b-instruct-q4_K_M",
+  "prompt": "Say hello.",
+  "stream": false
+}'
+```
+
+Expected response:
+
+```json
+{
+  "model": "qwen2.5:3b-instruct-q4_K_M",
+  "response": "Hello! How can I assist you today?",
+  "done": true
+}
 ```
 
 ---

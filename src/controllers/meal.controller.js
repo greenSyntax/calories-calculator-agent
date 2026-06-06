@@ -19,9 +19,7 @@ export const analyzeMealController = async (req, res) => {
       });
     }
 
-    const { meal } = validation.data;
-
-    const result = await analyzeMeal(meal);
+    const result = await analyzeMeal(validation.data);
 
     const nutritionValidation =
       nutritionResponseSchema.safeParse(result);
