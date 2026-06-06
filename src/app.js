@@ -10,12 +10,13 @@ app.use(express.json());
 
 app.use((req, res, next) => {
   const start = Date.now();
+  const route = req.path; // capture now — Express strips the mount prefix once inside a sub-router
   req._logStart = start;
-  logRequest(req.method, req.path, req.body);
+  logRequest(req.method, route, req.body);
 
   const originalJson = res.json.bind(res);
   res.json = (data) => {
-    logResponse(req.method, req.path, Date.now() - start, data);
+    logResponse(req.method, route, Date.now() - start, data);
     return originalJson(data);
   };
 
@@ -39,7 +40,7 @@ app.get('/health', async (req, res) => {
 // Global error handler — logs to logs.txt before responding
 app.use((err, req, res, next) => {
   const elapsed = req._logStart ? Date.now() - req._logStart : 0;
-  logError(req.method, req.path, elapsed, err);
+  logError(req.method, req.originalUrl, elapsed, err);
   res.status(500).json({ success: false, error: err.message });
 });
 
