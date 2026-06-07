@@ -44,3 +44,8 @@ export const logError = (method, route, elapsedMs, error) => {
   write(`Stack      : ${error.stack ?? 'N/A'}`);
   write('---');
 };
+
+export const logModelStatus = (textModel, textRunning, visionModel, visionRunning) => {
+  write(`text_model   : ${textModel} — ${textRunning ? 'running' : 'unavailable'}`);
+  write(`vision_model : ${visionModel} — ${visionRunning ? 'running' : 'unavailable'}`);
+};

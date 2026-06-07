@@ -2,11 +2,20 @@ import axios from 'axios';
 import express from 'express';
 import { env } from './config/env.js';
 import mealRoutes from './routes/meals.routes.js';
-import { logRequest, logResponse, logError } from './utils/logger.util.js';
+import { logRequest, logResponse, logError, logModelStatus } from './utils/logger.util.js';
 
 const app = express();
 
 app.use(express.json({ limit: '50mb' }));
+
+const isModelAvailable = async (modelName) => {
+  try {
+    const { data } = await axios.get(`${env.ollamaBaseUrl}/api/tags`, { timeout: 3000 });
+    return data.models?.some((m) => m.name === modelName) ?? false;
+  } catch {
+    return false;
+  }
+};
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -21,21 +30,21 @@ app.use((req, res, next) => {
     return originalJson(data);
   };
 
+  // Runs after response is sent — no added latency for the client
+  res.on('finish', async () => {
+    const [textStatus, visionStatus] = await Promise.all([
+      isModelAvailable(env.ollamaModel),
+      isModelAvailable(env.ollamaVisionModel)
+    ]);
+    logModelStatus(env.ollamaModel, textStatus, env.ollamaVisionModel, visionStatus);
+  });
+
   next();
 });
 
 app.use('/meal', mealRoutes);
 
 app.get('/health', async (req, res) => {
-  const isModelAvailable = async (modelName) => {
-    try {
-      const { data } = await axios.get(`${env.ollamaBaseUrl}/api/tags`, { timeout: 3000 });
-      return data.models?.some((m) => m.name === modelName) ?? false;
-    } catch {
-      return false;
-    }
-  };
-
   const [text_model_status, vision_model_status] = await Promise.all([
     isModelAvailable(env.ollamaModel),
     isModelAvailable(env.ollamaVisionModel)
