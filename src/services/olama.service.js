@@ -8,21 +8,27 @@ const SYSTEM_PROMPT =
   'You are an expert nutritionist. Estimate realistic nutrition values using common Indian serving sizes.';
 
 const buildRequestBody = ({ meal_media_type, meal_data, meal_image_base64 }) => {
-  const base = {
+  if (meal_media_type === 'image') {
+    const base64 = meal_image_base64.replace(/^data:image\/[a-z]+;base64,/, '');
+    return {
+      model: env.ollamaVisionModel,
+      stream: false,
+      format: 'json',
+      options: { temperature: 0.2, top_p: 0.8 },
+      system: SYSTEM_PROMPT,
+      prompt: buildImageNutritionPrompt(),
+      images: [base64]
+    };
+  }
+
+  return {
     model: env.ollamaModel,
     stream: false,
     format: 'json',
     options: { temperature: 0.2, top_p: 0.8 },
-    system: SYSTEM_PROMPT
+    system: SYSTEM_PROMPT,
+    prompt: buildNutritionPrompt(meal_data)
   };
-
-  if (meal_media_type === 'image') {
-    // Strip data-URL prefix if the client included it
-    const base64 = meal_image_base64.replace(/^data:image\/[a-z]+;base64,/, '');
-    return { ...base, prompt: buildImageNutritionPrompt(), images: [base64] };
-  }
-
-  return { ...base, prompt: buildNutritionPrompt(meal_data) };
 };
 
 export const analyzeMeal = async (input) => {
@@ -30,7 +36,7 @@ export const analyzeMeal = async (input) => {
 
   if (env.devLog)
     console.log(
-      `[DEV] Sending request to Ollama -> model: ${env.ollamaModel}, url: ${env.ollamaBaseUrl}, type: ${input.meal_media_type}`
+      `[DEV] Sending request to Ollama -> model: ${requestBody.model}, url: ${env.ollamaBaseUrl}, type: ${input.meal_media_type}`
     );
 
   const start = Date.now();

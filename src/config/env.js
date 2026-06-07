@@ -6,5 +6,6 @@ export const env = {
   port: process.env.PORT || 3000,
   ollamaBaseUrl: process.env.OLLAMA_BASE_URL,
   ollamaModel: process.env.OLLAMA_MODEL,
+  ollamaVisionModel: process.env.OLLAMA_VISION_MODEL,
   devLog: process.env.DEV_LOG?.toLowerCase() === 'true'
 };

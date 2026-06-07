@@ -7,6 +7,10 @@ const LOG_FILE = path.join(ROOT, 'logs.txt');
 
 const write = (line) => fs.appendFileSync(LOG_FILE, line + '\n');
 
+const BASE64_RE = /^[A-Za-z0-9+/]{100,}={0,2}$/;
+
+const isBase64 = (v) => typeof v === 'string' && BASE64_RE.test(v);
+
 // Remove null/undefined fields and replace base64 blobs with a placeholder
 const sanitize = (body) => {
   if (!body || typeof body !== 'object') return body;
@@ -14,7 +18,7 @@ const sanitize = (body) => {
   return Object.fromEntries(
     Object.entries(body)
       .filter(([, v]) => v !== null && v !== undefined)
-      .map(([k, v]) => [k, k === 'meal_image_base64' ? '[BASE64 IMAGE]' : v])
+      .map(([k, v]) => [k, isBase64(v) ? '<BASE_64_ENCODED>' : v])
   );
 };
 
