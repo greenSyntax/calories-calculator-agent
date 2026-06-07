@@ -39,11 +39,12 @@ export const analyzeMeal = async (input) => {
       `[DEV] Sending request to Ollama -> model: ${requestBody.model}, url: ${env.ollamaBaseUrl}, type: ${input.meal_media_type}`
     );
 
+  const timeout = input.meal_media_type === 'image' ? 180000 : 60000;
   const start = Date.now();
   let response;
 
   try {
-    response = await axios.post(`${env.ollamaBaseUrl}/api/generate`, requestBody, { timeout: 60000 });
+    response = await axios.post(`${env.ollamaBaseUrl}/api/generate`, requestBody, { timeout });
   } catch (err) {
     const elapsed = Date.now() - start;
     if (env.devLog)
