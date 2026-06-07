@@ -31,8 +31,9 @@ export const logRequest = (method, route, body) => {
   write(`Payload    : ${JSON.stringify(payload)}`);
 };
 
-export const logResponse = (method, route, elapsedMs, payload) => {
-  write(`[${new Date().toISOString()}] RESPONSE ${method} ${route} (${elapsedMs}ms)`);
+export const logResponse = (method, route, statusCode, mediaType, elapsedMs, payload) => {
+  write(`[${new Date().toISOString()}] RESPONSE ${method} ${route} ${statusCode} (${elapsedMs}ms)`);
+  write(`media_type : ${mediaType}`);
   write(`Payload    : ${JSON.stringify(payload)}`);
   write('---');
 };

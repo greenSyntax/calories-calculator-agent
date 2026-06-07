@@ -11,12 +11,13 @@ app.use(express.json({ limit: '50mb' }));
 app.use((req, res, next) => {
   const start = Date.now();
   const route = req.path; // capture now — Express strips the mount prefix once inside a sub-router
+  const mediaType = req.body?.meal_media_type ?? 'N/A';
   req._logStart = start;
   logRequest(req.method, route, req.body);
 
   const originalJson = res.json.bind(res);
   res.json = (data) => {
-    logResponse(req.method, route, Date.now() - start, data);
+    logResponse(req.method, route, res.statusCode, mediaType, Date.now() - start, data);
     return originalJson(data);
   };
 
@@ -26,15 +27,25 @@ app.use((req, res, next) => {
 app.use('/meal', mealRoutes);
 
 app.get('/health', async (req, res) => {
-  let ollamaConnected = false;
-  try {
-    await axios.get(`${env.ollamaBaseUrl}/api/tags`, { timeout: 3000 });
-    ollamaConnected = true;
-  } catch {
-    ollamaConnected = false;
-  }
+  const isModelAvailable = async (modelName) => {
+    try {
+      const { data } = await axios.get(`${env.ollamaBaseUrl}/api/tags`, { timeout: 3000 });
+      return data.models?.some((m) => m.name === modelName) ?? false;
+    } catch {
+      return false;
+    }
+  };
 
-  res.json({ status: 'ok', ollama: ollamaConnected });
+  const [text_model_status, vision_model_status] = await Promise.all([
+    isModelAvailable(env.ollamaModel),
+    isModelAvailable(env.ollamaVisionModel)
+  ]);
+
+  res.json({
+    status: 'ok',
+    text_model_status,
+    vision_model_status
+  });
 });
 
 // Global error handler — logs to logs.txt before responding
