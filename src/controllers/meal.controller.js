@@ -13,6 +13,7 @@ export const analyzeMealController = async (req, res) => {
     const validation = mealRequestSchema.safeParse(req.body);
 
     if (!validation.success) {
+      console.log('[LLM_ERROR]', JSON.stringify({ success: false, error: validation.error.errors }, null, 2));
       return res.status(400).json({
         success: false,
         error: validation.error.errors
@@ -33,12 +34,14 @@ export const analyzeMealController = async (req, res) => {
     }
 
     if (env.devLog) console.log('[DEV] Success from LLM ->', result);
+    console.log('[LLM_SUCCESS]', JSON.stringify({ success: true, data: result }, null, 2));
     return res.json({
       success: true,
       data: result
     });
   } catch (error) {
     if (env.devLog) console.log('[DEV] Failure from LLM ->', error.message);
+    console.log('[LLM_ERROR]', JSON.stringify({ success: false, error: error.message }, null, 2));
     console.error(error);
 
     return res.status(500).json({
