@@ -2,18 +2,20 @@
 
 AI-powered meal nutrition analysis API using Node.js, Express, Ollama, and Qwen2.5 running locally on Raspberry Pi.
 
-The API accepts meal descriptions in plain English and returns structured nutrition data in JSON format.
+The API accepts a meal as plain text or a food image and returns structured nutrition data in JSON format.
 
 ---
 
 # Features
 
-- AI-powered meal analysis
+- AI-powered meal analysis (text and image)
+- Vision model support (LLaVA)
 - Nutrition estimation
 - JSON-only structured responses
 - Ollama local inference
-- Qwen2.5 model integration
+- Qwen2.5 text model + LLaVA vision model
 - Request validation using Zod
+- Request / response logging to `logs.txt`
 - Clean architecture
 - Raspberry Pi compatible
 - Lightweight deployment
@@ -28,7 +30,8 @@ The API accepts meal descriptions in plain English and returns structured nutrit
 | Backend | Node.js |
 | Framework | Express.js |
 | AI Runtime | Ollama |
-| AI Model | Qwen2.5 3B |
+| Text Model | Qwen2.5 3B |
+| Vision Model | LLaVA |
 | Validation | Zod |
 | HTTP Client | Axios |
 
@@ -97,12 +100,18 @@ ollama --version
 
 ---
 
-# Pull AI Model
+# Pull AI Models
 
-Pull Qwen2.5 model:
+Pull text model:
 
 ```bash
 ollama pull qwen2.5:3b-instruct-q4_K_M
+```
+
+Pull vision model (required for image analysis):
+
+```bash
+ollama pull llava
 ```
 
 ---
@@ -151,6 +160,8 @@ Create `.env` file:
 PORT=3000
 OLLAMA_BASE_URL=http://localhost:11434
 OLLAMA_MODEL=qwen2.5:3b-instruct-q4_K_M
+OLLAMA_VISION_MODEL=llava
+DEV_LOG=True
 ```
 
 ---
@@ -187,6 +198,7 @@ docker build -t calories-calculator-agent .
 PORT=3000
 OLLAMA_BASE_URL=http://host-gateway:11434
 OLLAMA_MODEL=qwen2.5:3b-instruct-q4_K_M
+OLLAMA_VISION_MODEL=llava
 DEV_LOG=True
 ```
 
@@ -209,6 +221,8 @@ docker run -d \
 docker ps
 curl http://localhost:3000/health
 ```
+
+> **Build error `tls: bad record MAC`?** This is a network/TLS corruption during image pull — not a code issue. Run `docker build` again; it resolves on retry.
 
 ---
 
@@ -280,6 +294,7 @@ docker pull abhix09/calories-calculator-agent:latest
 PORT=3000
 OLLAMA_BASE_URL=http://host-gateway:11434
 OLLAMA_MODEL=qwen2.5:3b-instruct-q4_K_M
+OLLAMA_VISION_MODEL=llava
 DEV_LOG=True
 ```
 
@@ -358,11 +373,12 @@ GET /health
 ```json
 {
   "status": "ok",
-  "ollama": true
+  "text_model_status": true,
+  "vision_model_status": true
 }
 ```
 
-`ollama` is `true` when the Ollama server at `OLLAMA_BASE_URL` is reachable, `false` otherwise.
+`text_model_status` and `vision_model_status` are `true` when the respective model is pulled and available in Ollama.
 
 ---
 
@@ -374,11 +390,21 @@ GET /health
 POST /meal/analyze
 ```
 
-### Request Body
+### Request Body — Text
 
 ```json
 {
-  "meal": "3 Roti, small portion of aloo beans, 8g protein yogurt, 1 cucumber"
+  "meal_media_type": "text",
+  "meal_data": "3 Roti, small portion of aloo beans, 8g protein yogurt, 1 cucumber"
+}
+```
+
+### Request Body — Image
+
+```json
+{
+  "meal_media_type": "image",
+  "meal_image_base64": "<base64-encoded-image>"
 }
 ```
 
@@ -407,11 +433,23 @@ POST /meal/analyze
 
 # cURL Example
 
+**Text:**
 ```bash
 curl --location 'http://localhost:3000/meal/analyze' \
 --header 'Content-Type: application/json' \
 --data '{
-    "meal": "3 Roti, small portion of aloo beans, 8g protein yogurt, 1 cucumber"
+    "meal_media_type": "text",
+    "meal_data": "3 Roti, small portion of aloo beans, 8g protein yogurt, 1 cucumber"
+}'
+```
+
+**Image:**
+```bash
+curl --location 'http://localhost:3000/meal/analyze' \
+--header 'Content-Type: application/json' \
+--data '{
+    "meal_media_type": "image",
+    "meal_image_base64": "<base64-encoded-image>"
 }'
 ```
 
@@ -670,7 +708,6 @@ Expected variance:
 
 # Future Improvements
 
-- Meal image analysis
 - Voice meal input
 - User meal history
 - Macro tracking
