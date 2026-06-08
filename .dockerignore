@@ -1,3 +1,7 @@
 node_modules
 .env
 .git
+.claude
+logs.txt
+*.md
+PR_SUMMARY.md
